@@ -2,59 +2,113 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request; // Requirement A1: Correct use statement
+use App\Models\Book;
+use App\Models\Genre;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
-    // Mock dataset
-    private array $books = [
-        ['id' => 1, 'title' => 'Laravel Essentials', 'genre' => 'Programming', 'year' => 2024],
-        ['id' => 2, 'title' => 'Mastering PHP', 'genre' => 'Programming', 'year' => 2023],
-        ['id' => 3, 'title' => 'UI/UX Design Fundamentals', 'genre' => 'Design', 'year' => 2024],
-        ['id' => 4, 'title' => 'Clean Code Principles', 'genre' => 'Programming', 'year' => 2022],
-        ['id' => 5, 'title' => 'Graphic Design Basics', 'genre' => 'Design', 'year' => 2023],
-    ];
-
-    /**
-     * Requirement A1: Accepts Request object via dependency injection
-     */
-    public function index(Request $request)
+    public function index()
     {
-        // Requirement A2: Read query parameters using query() with fallback defaults
-        $selectedGenre = $request->query('genre', 'all');
-        $selectedYear  = $request->query('year', 'all');
+        $books = Book::all()->map(fn (Book $book) => $book->toArray());
 
-        $items = collect($this->books);
-
-        // Requirement A3 & A4: Individual & combined filtering
-        if ($request->filled('genre') && $selectedGenre !== 'all') {
-            $items = $items->where('genre', $selectedGenre);
-        }
-
-        if ($request->filled('year') && $selectedYear !== 'all') {
-            $items = $items->where('year', (int) $selectedYear);
-        }
-
-        // Requirement A5: Default full list returned when unfiltered
-        return view('books.catalog', [
-            'books' => $items->values()->all(),
-            'selectedGenre' => $selectedGenre,
-            'selectedYear'  => $selectedYear,
-        ]);
+        return view('books.catalog', compact('books'));
     }
 
-    public function show($id)
+    public function create()
     {
-        $book = collect($this->books)->firstWhere('id', (int) $id);
+        $genres = Genre::all();
 
-        if (!$book) {
-            abort(404);
-        }
+        return view('books.create', compact('genres'));
+    }
 
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'integer', 'min:1', 'unique:books,code'],
+            'title' => ['required', 'string', 'max:255'],
+            'author' => ['required', 'string', 'max:255'],
+            'genre_id' => ['required', 'exists:genres,id'],
+            'price' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+        ]);
+
+        $validated['genre'] = Genre::findOrFail($validated['genre_id'])->name;
+        $book = Book::create($validated);
+
+        return redirect()
+            ->route('books.details', $book->id)
+            ->with('success', 'Book added successfully.');
+    }
+
+    public function show(Book $book)
+    {
         return view('books.details', compact('book'));
     }
 
-    // Requirement C5: Keep unfinished store & update stubs for future modules
-    public function store(Request $request) {}
-    public function update(Request $request, $id) {}
+    public function edit(Book $book)
+    {
+        $genres = Genre::all();
+
+        return view('books.edit', compact('book', 'genres'));
+    }
+
+    public function update(Request $request, Book $book)
+    {
+        if ($request->input('_action') === 'old-input-redirect') {
+            return redirect()
+                ->route('books.edit', $book)
+                ->withInput($request->except(['_token', '_method', '_action']))
+                ->with('status', 'Form values restored. Changes were not saved.');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'code' => ['required', 'integer', 'min:1', 'unique:books,code,'.$book->id],
+            'title' => ['required', 'string', 'max:255'],
+            'author' => ['required', 'string', 'max:255'],
+            'genre_id' => ['required', 'exists:genres,id'],
+            'price' => ['required', 'numeric'],
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('books.edit', $book)
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $validated = $validator->validated();
+        $validated['genre'] = Genre::findOrFail($validated['genre_id'])->name;
+        $book->update($validated);
+
+        return redirect()
+            ->route('books.catalog')
+            ->with('success', 'Book updated successfully.');
+    }
+
+    public function destroy(Book $book) {}
+
+    public function spotlight()
+    {
+        $selectedBook = Book::findOrFail(104);
+
+        return view('books.details', [
+            'book' => $selectedBook,
+            'isSpotlight' => true,
+        ]);
+    }
+
+    public function categoryFilter($category = null)
+    {
+        $query = Book::query();
+
+        if ($category) {
+            $query->whereRaw('LOWER(genre) = ?', [strtolower($category)]);
+        }
+
+        return view('books.catalog', [
+            'books' => $query->get()->map(fn (Book $book) => $book->toArray()),
+            'currentCategory' => $category,
+        ]);
+    }
 }

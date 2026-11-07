@@ -1,7 +1,6 @@
-```blade
 @extends('layouts.app')
 
-@section('title', $book['title'])
+@section('title', $book->title)
 
 @section('content')
 
@@ -15,10 +14,10 @@
                 </div>
             @endif
 
-            <h2>{{ $book['title'] }}</h2>
+            <h2>{{ $book->title }}</h2>
 
             <p class="text-muted">
-                by {{ $book['author'] }}
+                by {{ $book->author }}
             </p>
 
             <hr>
@@ -29,19 +28,19 @@
 
                     <p>
                         <strong>Book Code:</strong>
-                        {{ $book['id'] }}
+                        {{ $book->code }}
                     </p>
 
                     <p>
                         <strong>Genre:</strong>
                         <span class="badge bg-secondary">
-                            {{ $book['genre'] }}
+                            {{ $book->genre }}
                         </span>
                     </p>
 
                     <p>
                         <strong>Price:</strong>
-                        ${{ number_format($book['price'], 2) }}
+                        ${{ number_format((float) $book->price, 2) }}
                     </p>
 
                 </div>
@@ -52,10 +51,12 @@
                class="btn btn-primary">
                 ← Back to Catalog
             </a>
+            <a href="{{ route('books.edit', $book) }}" class="btn btn-warning">
+                Edit Book
+            </a>
 
         </div>
 
     </div>
 
 @endsection
-```

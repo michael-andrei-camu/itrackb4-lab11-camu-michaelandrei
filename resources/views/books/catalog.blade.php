@@ -1,65 +1,168 @@
 @extends('layouts.app')
 
+@section('title', 'Book Catalog')
+
 @section('content')
-<div class="container mt-4">
-    <h2 class="mb-3">Book Catalog</h2>
 
-    <!-- Requirement B5: Displays active filters -->
-    <div class="alert alert-secondary py-2 mb-3">
-        <small class="text-uppercase fw-bold">Active Filters:</small> 
-        <span class="badge bg-primary">Genre: {{ $selectedGenre }}</span>
-        <span class="badge bg-info text-dark">Year: {{ $selectedYear }}</span>
+    @if(isset($currentCategory) && $currentCategory)
+        <div class="alert alert-info">
+            Currently viewing genre:
+            <strong>{{ $currentCategory }}</strong>
+        </div>
+    @endif
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <h2 class="mb-3">📚 Digital Bookstore Directory</h2>
+
+            <p class="text-muted">
+                Browse our available books below.
+            </p>
+
+            @if (session('success'))
+                <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
+
+            <div class="mb-4">
+
+                <strong>Browse Genres:</strong>
+                <a href="{{ route('books.create') }}" class="btn btn-sm btn-success">
+                    Add a Book
+                </a>
+
+                <a href="{{ route('books.genre') }}"
+                   class="btn btn-sm btn-outline-primary">
+                    All Titles
+                </a>
+
+                <a href="{{ route('books.genre', 'Fiction') }}"
+                   class="btn btn-sm btn-outline-primary">
+                    Fiction
+                </a>
+
+                <a href="{{ route('books.genre', 'Dystopian') }}"
+                   class="btn btn-sm btn-outline-primary">
+                    Dystopian
+                </a>
+
+                <a href="{{ route('books.genre', 'Sci-Fi') }}"
+                   class="btn btn-sm btn-outline-primary">
+                    Sci-Fi
+                </a>
+
+                <a href="{{ route('books.spotlight') }}"
+                   class="btn btn-sm btn-warning">
+                    ⭐ Book of the Month
+                </a>
+
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-striped table-bordered table-hover">
+
+                    <thead class="table-dark">
+
+                        <tr>
+                            <th>#</th>
+                            <th>Code</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Genre</th>
+                            <th>Price ($)</th>
+                            <th>Category</th>
+                            <th>Action</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @forelse($books as $item)
+
+                            <tr>
+
+                                <td>
+                                    {{ $loop->iteration }}
+                                </td>
+
+                                <td>
+                                    {{ $item['code'] }}
+                                </td>
+
+                                <td>
+                                    <strong>{{ $item['title'] }}</strong>
+                                </td>
+
+                                <td>
+                                    {{ $item['author'] }}
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ $item['genre'] }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    ${{ number_format($item['price'], 2) }}
+                                </td>
+
+                                <td>
+
+                                    @if($item['price'] >= 15)
+                                        <span class="badge bg-success">
+                                            Premium
+                                        </span>
+                                    @else
+                                        <span class="badge bg-warning text-dark">
+                                            Affordable
+                                        </span>
+                                    @endif
+
+                                </td>
+
+                                <td>
+
+                                    <a href="{{ route('books.details', $item['id']) }}"
+                                       class="btn btn-primary btn-sm">
+                                        Read Info
+                                    </a>
+                                    <a href="{{ route('books.edit', $item['id']) }}"
+                                       class="btn btn-warning btn-sm">
+                                        Edit
+                                    </a>
+
+                                </td>
+
+                            </tr>
+
+                        @empty
+
+                            <tr>
+
+                                <td colspan="8" class="text-center py-4">
+
+                                    <strong>
+                                        No books are currently available in our bookstore.
+                                    </strong>
+
+                                </td>
+
+                            </tr>
+
+                        @endforelse
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
     </div>
 
-    <!-- Filter Links Section -->
-    <div class="card card-body mb-4 bg-light">
-        <!-- Requirement B1 & B2: Genre Filter Links (Preserves Year) -->
-        <div class="mb-2">
-            <strong>Genre:</strong>
-            <a href="{{ route('books.index', array_filter(['genre' => 'Programming', 'year' => request('year')])) }}" class="btn btn-link btn-sm p-0 me-2">Programming</a>
-            <a href="{{ route('books.index', array_filter(['genre' => 'Design', 'year' => request('year')])) }}" class="btn btn-link btn-sm p-0 me-2">Design</a>
-        </div>
-
-        <!-- Requirement B1 & B2: Year Filter Links (Preserves Genre) -->
-        <div class="mb-2">
-            <strong>Year:</strong>
-            <a href="{{ route('books.index', array_filter(['genre' => request('genre'), 'year' => 2024])) }}" class="btn btn-link btn-sm p-0 me-2">2024</a>
-            <a href="{{ route('books.index', array_filter(['genre' => request('genre'), 'year' => 2023])) }}" class="btn btn-link btn-sm p-0 me-2">2023</a>
-            <a href="{{ route('books.index', array_filter(['genre' => request('genre'), 'year' => 2022])) }}" class="btn btn-link btn-sm p-0 me-2">2022</a>
-        </div>
-
-        <!-- Requirement B3: Clear both filters at once -->
-        <div>
-            <a href="{{ route('books.index') }}" class="btn btn-sm btn-outline-dark mt-2">Clear All Filters</a>
-        </div>
-    </div>
-
-    <!-- Table Display -->
-    <table class="table table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>Title</th>
-                <th>Genre</th>
-                <th>Year</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($books as $book)
-                <tr>
-                    <td>{{ $book['title'] }}</td>
-                    <td><span class="badge bg-secondary">{{ $book['genre'] }}</span></td>
-                    <td>{{ $book['year'] }}</td>
-                    <td>
-                        <a href="{{ route('books.show', $book['id']) }}" class="btn btn-sm btn-primary">Details</a>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="4" class="text-center text-muted">No books match the selected criteria.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
 @endsection
